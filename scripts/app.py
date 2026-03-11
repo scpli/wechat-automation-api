@@ -6,7 +6,12 @@ from flask import Flask, request, jsonify
 import json
 import logging
 import os
+import sys
 from message_queue import MessageQueue
+
+def get_project_root():
+    """获取项目根目录绝对路径"""
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # 创建 Flask 应用
 app = Flask(__name__)
@@ -19,7 +24,8 @@ config = None
 def setup_logging():
     """配置日志系统"""
     log_level = config.get('log_level', 'INFO')
-    log_file = config.get('log_file', 'wechat_automation.log')
+    log_file_name = config.get('log_file', 'wechat_automation.log')
+    log_file = os.path.join(get_project_root(), log_file_name)
     
     logging.basicConfig(
         level=getattr(logging, log_level),
@@ -37,7 +43,7 @@ def setup_logging():
 # 加载配置
 def load_config():
     """从 config.json 加载配置"""
-    config_file = 'config.json'
+    config_file = os.path.join(get_project_root(), 'config.json')
     if not os.path.exists(config_file):
         raise FileNotFoundError(f"配置文件 {config_file} 不存在")
     

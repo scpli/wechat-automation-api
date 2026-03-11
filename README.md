@@ -6,7 +6,8 @@
 
 ## ✨ 项目特性
 
-- 🌐 **HTTP API 接口** - RESTful API，易于集成
+- 🤖 **Agent Skill 支持** - 专为 OpenClaw 等大模型智能体设计的极简命令行即时调用入口。
+- 🌐 **HTTP API 接口** - RESTful API，提供独立运行的异步队列监听服务。
 - 🔐 **Token 身份验证** - 保证接口安全
 - 📋 **消息队列管理** - 按顺序可靠发送
 - 📨 **批量发送支持** - 一次请求发送给多个联系人
@@ -40,11 +41,21 @@ Copy-Item config.json.example config.json
 notepad config.json
 ```
 
-### 4. 启动服务
+### 4. 作为 Skill 执行（推荐给大模型 Agent）
 
-```powershell
+```bash
+# 发送文本
+python scripts/skill_cli.py --to "文件传输助手" --content "你好，这是一条来自智能体的打招呼"
+
+# 发送图片
+python scripts/skill_cli.py --to "文件传输助手" --content "https://example.com/logo.png" --action "sendpic"
+```
+
+### 5. 作为后台 HTTP 队列服务运行
+
+```cmd
 # 确保微信已启动并登录
-python app.py
+run.bat
 ```
 
 看到以下输出表示启动成功：
@@ -183,14 +194,17 @@ python test/test_api.py
 
 ## 📁 项目结构
 
-```
-winappdriver/
-├── app.py                      # Flask 主服务
-├── wechat_controller.py        # 微信控制器
-├── message_queue.py            # 消息队列管理
+```text
+wechat-automation-api/
+├── scripts/                    # 核心代码目录
+│   ├── app.py                  # Flask 主服务
+│   ├── wechat_controller.py    # 微信控制器
+│   ├── message_queue.py        # 消息队列管理
+│   └── skill_cli.py            # Agent Skill 专用纯净命令行入口
 ├── config.json.example         # 配置文件示例
 ├── requirements.txt            # Python 依赖
-├── disconnect_rdp.bat          # RDP 断开脚本
+├── run.bat                     # HTTP 服务快捷启动脚本
+├── SKILL.md                    # Agent Skill 挂载说明规范
 ├── test/                       # 测试文件目录
 │   ├── test_api.py            # API 测试脚本
 │   └── README.md              # 测试说明
@@ -317,7 +331,17 @@ Get-Content wechat_automation.log -Tail 50
 
 ## 📜 版本历史
 
-### v1.1.0 (2025-10-31)
+### v2.0.0 (2026-03-11)
+- ✨ 架构重构，将核心代码沉降至 `scripts`，支持根目录环境脱耦
+- ✨ 新增 `skill_cli.py` 提供极简同步命令行发送，完美兼容 OpenClaw 等 Agent 系统
+- ✨ 新增 `run.bat` 并维护 HTTP 异步队列原设，达成独立双形态运转
+
+### v1.1.0 (2025-11-29)
+- ✅ 修复特殊字符通过 SendKeys 发送丢失的问题，重构底层为自动化剪贴板机制
+- ✅ 优化微信会话列表激活策略与图片缓存层
+- ✅ 全面增加健壮性与重试机制
+
+### v1.0.0 (2025-10-31)
 - ✅ 新增图片发送功能（sendpic action）
 - ✅ 支持通过 URL 下载图片并发送
 - ✅ 自动剪贴板操作发送图片
