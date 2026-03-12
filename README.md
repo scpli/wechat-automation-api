@@ -16,6 +16,7 @@
 - ⏱️ **自动间隔控制** - 每条消息间隔 1 秒，可配置
 - 📝 **完善的日志系统** - 记录所有操作和错误
 - 🛡️ **错误容错机制** - 单条失败不影响后续消息
+- 🚨 **断线预警监控** - 独立的监控守护进程，断联时通过 WPush 自动推送到手机
 
 ## 🚀 快速开始
 
@@ -238,11 +239,18 @@ Copy-Item config.json.example config.json
     "port": 8808,                       // 服务监听端口
     "message_interval": 1,              // 消息发送间隔（秒）
     "log_level": "INFO",                // 日志级别（DEBUG/INFO/WARNING/ERROR）
-    "log_file": "wechat_automation.log" // 日志文件路径
+    "log_file": "wechat_automation.log",// 日志文件路径
+    "monitor_interval": 60,             // 微信断线监控检测间隔（秒），填 0 即关闭监控
+    "monitor_max_retries": 3,           // 连续失败最大通知次数，防骚扰
+    "wpush": {                          // Wpush 免部署推送通道
+        "apikey": "你的apikey",
+        "title": "微信掉线预警",
+        "content": "检测到无法获取微信窗口，微信可能已掉线或自动退出，请及时检查服务器状态。"
+    }
 }
 ```
 
-**注意**：`config.json` 已加入 `.gitignore`，不会被提交到 Git，可以安全地存储您的 token。
+**注意**：`config.json` 已加入 `.gitignore`，不会被提交到 Git，可以安全地存储您的 token 等敏感信息。
 
 ## 🔧 工作原理
 
@@ -330,6 +338,9 @@ Get-Content wechat_automation.log -Tail 50
 - [ ] 支持群聊消息
 
 ## 📜 版本历史
+
+### v2.1.0 (2026-03-12)
+- ✨ 增加基于守护进程与 WPush 渠道的 `monitor.py` 微信脱落/掉线预警体系，自带限流防骚扰。
 
 ### v2.0.0 (2026-03-11)
 - ✨ 架构重构，将核心代码沉降至 `scripts`，支持根目录环境脱耦

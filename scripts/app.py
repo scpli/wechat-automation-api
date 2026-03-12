@@ -7,6 +7,8 @@ import json
 import logging
 import os
 import sys
+import subprocess
+import atexit
 from message_queue import MessageQueue
 
 def get_project_root():
@@ -19,6 +21,7 @@ app = Flask(__name__)
 # 全局变量
 message_queue = None
 config = None
+monitor_process = None
 
 # 配置日志
 def setup_logging():
@@ -231,6 +234,29 @@ def main():
     # 获取服务器配置
     host = config.get('host', '127.0.0.1')
     port = config.get('port', 8808)
+    
+    # 启动监控进程 (monitor.py)
+    global monitor_process
+    monitor_interval = config.get('monitor_interval', 0)
+    if monitor_interval > 0:
+        logger.info(f"准备启动微信监控进程 (间隔: {monitor_interval}s)...")
+        monitor_script = os.path.join(get_project_root(), 'scripts', 'monitor.py')
+        try:
+            # 使用 subprocess.Popen 启动独立进程
+            # args 用 list 保证路径带空格时的兼容性
+            monitor_process = subprocess.Popen([sys.executable, monitor_script])
+            logger.info(f"监控进程已成功启动，PID: {monitor_process.pid}")
+            
+            # 注册退出时的清理函数
+            def cleanup_monitor():
+                if monitor_process and monitor_process.poll() is None:
+                    logger.info("正在停止监控进程...")
+                    monitor_process.terminate()
+            atexit.register(cleanup_monitor)
+        except Exception as e:
+            logger.error(f"启动监控进程失败: {e}", exc_info=True)
+    else:
+        logger.info("监控间隔为 0，不启动独立监控进程。")
     
     # 启动 Flask 服务
     logger.info(f"微信自动化服务启动在 http://{host}:{port}")
