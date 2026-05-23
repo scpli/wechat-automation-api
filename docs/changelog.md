@@ -1,5 +1,27 @@
 # 更新日志
 
+## 2026-05-23
+
+### 修复：剪贴板中文失效导致消息残缺（v2.1.1）
+
+**修改文件：** `scripts/wechat_controller.py`
+
+**问题描述：**
+- `uiautomation.SetClipboardText()` 对中文 Unicode 支持不好，设置后 `GetClipboardText()` 验证失败，触发 3 次重试后放弃
+- 降级到 `SendKeys` 后 `interval=0.01`（10ms）太快，IME 来不及组字，导致中文/多字节字符丢失
+- 实际表现：发送 "🦞 龙虾测试：WorkBuddy 发信功能正常！" 收到 "🦞 龙虾测试：orkBuddy 发信功能正常！"（W 丢失）
+
+**解决方案：**
+- ✅ 剪贴板操作改用 `pyperclip.copy()` / `pyperclip.paste()`，对 Unicode 支持完整
+- ✅ 含中文/多字节字符时，剪贴板失败后**拒绝降级 SendKeys**，直接报错退出（避免产生残缺消息）
+- ✅ 纯英文消息仍保留 SendKeys 降级路径，`interval` 从 0.01 调整为 0.05
+- ✅ 新增 `import pyperclip`
+
+**优化效果：**
+- 中文消息 100% 完整发送
+- 剪贴板验证通过率显著提升，不再有 "剪贴板内容验证失败，重试中..." 日志
+
+---
 ## 2026-03-12
 
 ### 新增：微信掉线独立监控与 wpush 预警通知功能

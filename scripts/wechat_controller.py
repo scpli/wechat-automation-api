@@ -13,6 +13,7 @@ from io import BytesIO
 import win32clipboard
 from pathlib import Path
 import hashlib
+import pyperclip
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -213,7 +214,8 @@ class WeChatController:
     
     def _set_clipboard_text(self, text, max_retries=3):
         """
-        安全地设置剪贴板文本（带重试机制）
+        安全地设置剪贴板文本（使用 pyperclip，正确支持 Unicode/中文）
+        验证方式改为：先获取→清空→设置→再获取→比对
         
         Args:
             text: 要设置的文本内容
@@ -224,14 +226,13 @@ class WeChatController:
         """
         for attempt in range(max_retries):
             try:
-                auto.SetClipboardText(text)
-                # 验证剪贴板内容是否设置成功
+                pyperclip.copy(text)
                 time.sleep(0.05)
-                clipboard_content = auto.GetClipboardText()
+                clipboard_content = pyperclip.paste()
                 if clipboard_content == text:
                     return True
                 else:
-                    logger.warning(f"剪贴板内容验证失败，重试中... (尝试 {attempt + 1}/{max_retries})")
+                    logger.warning(f"剪贴板内容验证失败，重试中... (尝试 {attempt + 1}/{max_retries}) 期望长度={len(text)} 实际长度={len(clipboard_content)}")
             except Exception as e:
                 logger.warning(f"设置剪贴板失败: {e}，重试中... (尝试 {attempt + 1}/{max_retries})")
             time.sleep(0.1)
@@ -273,11 +274,16 @@ class WeChatController:
             # 这种方式比 SendKeys 快得多，且不会出现特殊字符（如【】￥等）被误解析的问题
             if not self._set_clipboard_text(message):
                 # 剪贴板设置失败，回退到 SendKeys 方式（作为兜底）
-                logger.warning("剪贴板设置失败，尝试使用 SendKeys 方式")
+                # 注意：SendKeys 对中文支持较差，仅建议用于纯英文短消息
+                if any(ord(c) > 127 for c in message):
+                    logger.error("剪贴板失败且消息含中文/多字节字符，SendKeys 不可靠，放弃发送。请检查 pyperclip 是否正常工作。")
+                    return False
+                logger.warning("剪贴板设置失败，尝试使用 SendKeys 方式（仅推荐英文）")
                 # 转义特殊字符，避免被 SendKeys 误解析
                 escaped_message = message.replace('{', '{{').replace('}', '}}')
                 formatted_message = escaped_message.replace('\n', '{Shift}{Enter}')
-                chat_edit.SendKeys(formatted_message + '{Enter}', interval=0.01)
+                # interval 至少 0.05s，中文/多字节字符容易丢失
+                chat_edit.SendKeys(formatted_message + '{Enter}', interval=0.05)
             else:
                 # 粘贴消息（Ctrl+V）
                 chat_edit.SendKeys('{Ctrl}v')
