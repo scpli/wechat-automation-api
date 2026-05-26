@@ -556,7 +556,7 @@ class WeChatController:
         发送图片（URL 图片下载后发送；本地路径直接作为文件粘贴发送）
         
         Args:
-            image_url: 图片的 URL
+            image_url: 图片的 URL 或本地文件路径
             
         Returns:
             bool: 发送是否成功

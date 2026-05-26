@@ -1,5 +1,25 @@
 # 更新日志
 
+## 2026-05-26
+
+### 修复：sendpic 不支持本地图片路径（v2.1.2）
+
+**修改文件：** `scripts/wechat_controller.py`、`scripts/skill_cli.py`
+
+**问题描述：**
+- `sendpic` 动作只支持图片 URL，传入本地路径时报错 `No connection adapters were found for 'C:\...'`
+- `skill_cli.py` 的 `--content` 帮助信息写的是"图片URL"，未说明支持本地路径
+
+**解决方案：**
+- ✅ `send_picture()` 方法新增本地文件检测：`os.path.exists(image_url)` 为 True 时跳过下载，直接使用本地路径
+- ✅ 更新 `skill_cli.py` 帮助信息：`--content` 说明改为"消息内容(发文本)或图片路径/URL(发图片)"
+
+**优化效果：**
+- 本地图片可直接发送，不再需要先上传获取 URL
+- 调用示例：`python skill_cli.py --to "文件传输助手" --content "C:\path\to\pic.png" --action sendpic`
+
+---
+
 ## 2026-05-23
 
 ### 修复：剪贴板中文失效导致消息残缺（v2.1.1）
