@@ -54,7 +54,7 @@ class MessageQueue:
         Args:
             to_list: 接收者列表，可以包含多个联系人
             content: 消息内容（文本或图片 URL）
-            action: 消息类型，'sendtext' 或 'sendpic'
+            action: 消息类型，'sendtext'、'sendpic' 或 'sendfile'
             
         Returns:
             int: 添加到队列的消息数量
@@ -72,7 +72,9 @@ class MessageQueue:
             self.queue.put(message_item)
             count += 1
             
-            if action == 'sendpic':
+            if action == 'sendfile':
+                logger.info(f"文件消息已加入队列: 接收者={contact}, 路径={content}")
+            elif action == 'sendpic':
                 logger.info(f"图片消息已加入队列: 接收者={contact}, URL={content}")
             else:
                 logger.info(f"文本消息已加入队列: 接收者={contact}, 内容长度={len(content)}")
@@ -116,7 +118,15 @@ class MessageQueue:
                     action = message_item.get('action', 'sendtext')  # 默认为文本消息
                     
                     # 根据 action 类型发送消息
-                    if action == 'sendpic':
+                    if action == 'sendfile':
+                        logger.info(f"开始处理文件消息: 接收者={contact}")
+                        success = wechat_controller.search_and_send_file(contact, content)
+                        
+                        if success:
+                            logger.info(f"文件发送成功: 接收者={contact}")
+                        else:
+                            logger.error(f"文件发送失败: 接收者={contact}")
+                    elif action == 'sendpic':
                         logger.info(f"开始处理图片消息: 接收者={contact}")
                         success = wechat_controller.search_and_send_picture(contact, content)
                         
