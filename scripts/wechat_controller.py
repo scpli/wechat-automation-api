@@ -433,19 +433,24 @@ class WeChatController:
     
     def send_picture(self, image_url):
         """
-        发送图片（通过 URL 下载后粘贴发送，使用缓存避免重复下载）
+        发送图片（支持 URL 下载或本地文件路径）
         
         Args:
-            image_url: 图片的 URL
+            image_url: 图片的 URL 或本地文件路径
             
         Returns:
             bool: 发送是否成功
         """
         try:
-            # 下载图片（或使用缓存）
-            cache_file = self._download_image(image_url)
-            if not cache_file:
-                return False
+            # 检查是否是本地文件（支持本地路径，避免下载）
+            if os.path.exists(image_url):
+                cache_file = image_url
+                logger.info(f"使用本地图片文件，跳过下载: {cache_file}")
+            else:
+                # 下载图片（或使用缓存）
+                cache_file = self._download_image(image_url)
+                if not cache_file:
+                    return False
             
             # 复制图片到剪贴板
             if not self._copy_image_to_clipboard(cache_file):

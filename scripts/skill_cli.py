@@ -9,7 +9,7 @@ from wechat_controller import WeChatController
 def main():
     parser = argparse.ArgumentParser(description="微信发信命令行工具(Skill入口)")
     parser.add_argument("--to", required=True, help="接收者联系人名称")
-    parser.add_argument("--content", required=True, help="消息内容(发文本)或图片URL(发图片)")
+    parser.add_argument("--content", required=True, help="消息内容(发文本)或图片路径/URL(发图片)")
     parser.add_argument("--action", choices=["sendtext", "sendpic"], default="sendtext", help="类型: sendtext(默认) 或 sendpic")
     
     args = parser.parse_args()
