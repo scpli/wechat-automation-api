@@ -231,10 +231,18 @@ class WeChatController:
                 search_box.SendKeys('{Ctrl}v')
                 time.sleep(0.2)
             else:
-                # 剪贴板设置失败，回退到 SendKeys
-                logger.warning("搜索时剪贴板设置失败，使用 SendKeys 方式")
+                # 剪贴板设置失败：含中文/多字节字符直接报错，避免 SendKeys 漏字搜不到联系人
+                if any(ord(c) > 127 for c in contact_name):
+                    error_message = (
+                        f"搜索时剪贴板设置失败，且联系人名称「{contact_name}」包含中文或多字节字符，"
+                        "SendKeys 漏字会导致搜不到目标。请检查 pyperclip/系统剪贴板是否正常。"
+                    )
+                    logger.error(error_message)
+                    return self._fail("CLIPBOARD_TEXT_FAILED", error_message)
+                # 纯 ASCII 名称才允许 SendKeys 兜底，interval 至少 0.05s 防字符丢失
+                logger.warning("搜索时剪贴板设置失败，使用 SendKeys 方式（仅推荐英文）")
                 escaped_name = contact_name.replace('{', '{{').replace('}', '}}')
-                search_box.SendKeys(escaped_name, interval=0.01)
+                search_box.SendKeys(escaped_name, interval=0.05)
                 time.sleep(0.2)
             
             # 按 Enter 确认搜索
