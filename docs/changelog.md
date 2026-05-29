@@ -1,5 +1,25 @@
 # 更新日志
 
+## 2026-05-29
+
+### 修复：uiautomation 日志写项目目录被拦截 & Windows 中文输出乱码（v2.1.5）
+
+**修改文件：** `scripts/wechat_controller.py`、`scripts/skill_cli.py`
+
+**问题描述：**
+- `uiautomation` 默认在项目目录写 `@AutomationLog.txt`，在沙箱/受限环境下被拦截导致报错 `FileNotFoundError: can't write the log`
+- `skill_cli.py` 在 Windows 下 stdout 使用 GBK 编码，中文输出乱码（显示为 `????`）
+
+**解决方案：**
+- ✅ `wechat_controller.py` 初始化时将 `auto.Logger.SetLogDir()` 重定向到系统临时目录 `%TEMP%\wechat_automation_logs`
+- ✅ `skill_cli.py` 开头新增 `sys.stdout.reconfigure(encoding="utf-8")`，修复 Windows 下中文输出乱码
+
+**优化效果：**
+- 沙箱/受限环境下不再因日志写入失败而报错
+- `skill_cli.py --help` 及所有中文输出正常显示
+
+---
+
 ## 2026-05-27
 
 ### 修复：search_contact 剪贴板降级仍可能丢失中文（v2.1.4）
