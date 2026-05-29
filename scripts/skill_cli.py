@@ -3,6 +3,13 @@ import json
 import sys
 import os
 
+# 修复 Windows 下 stdout 中文乱码问题
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 # 确保能导入同目录的其他模块
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 

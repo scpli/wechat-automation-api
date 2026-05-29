@@ -18,6 +18,15 @@ from pathlib import Path
 import hashlib
 import pyperclip
 
+# 将 uiautomation 日志目录重定向到系统临时目录，避免在项目目录写文件被拦截
+_auto_log_dir = os.path.join(tempfile.gettempdir(), 'wechat_automation_logs')
+if not os.path.exists(_auto_log_dir):
+    os.makedirs(_auto_log_dir, exist_ok=True)
+try:
+    auto.Logger.SetLogDir(_auto_log_dir)
+except Exception:
+    pass
+
 # 配置日志
 logger = logging.getLogger(__name__)
 
