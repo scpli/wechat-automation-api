@@ -1,5 +1,27 @@
 # 更新日志
 
+## 2026-05-27
+
+### 修复：search_contact 剪贴板降级仍可能丢失中文（v2.1.4）
+
+**修改文件：** `scripts/wechat_controller.py`
+
+**问题描述：**
+- v2.1.1（66be608）只把"剪贴板失败时含中文不再降级 SendKeys"的修复加到了 `send_message`，但 `search_contact` 里搜索框输入联系人名称的剪贴板兜底逻辑没有同步修复。
+- 后续 v2.1.3（caa8843）大重构改 `SendResult` 返回值时，`search_contact_result` 这块剪贴板降级路径被原样搬过来，依然是 `interval=0.01` 的 `SendKeys` + 无中文检查。
+- 实际表现：剪贴板偶发抢占时，中文联系人名（如「线报转发」「文件传输助手」）会丢字 → 搜不到联系人 → 整个 `search_and_send` 链路失败，但失败原因被掩盖为「CONTACT_NOT_FOUND」。
+
+**解决方案：**
+- ✅ `search_contact_result` 的剪贴板兜底逻辑对齐 `send_message_result`：
+  - 联系人名称含中文/多字节字符且剪贴板失败时，直接返回 `CLIPBOARD_TEXT_FAILED`，不再降级 `SendKeys` 漏字搜错人
+  - 纯 ASCII 名称才允许 `SendKeys` 兜底，`interval` 从 `0.01` 调整为 `0.05`
+
+**优化效果：**
+- 中文联系人搜索的剪贴板异常路径不再产生「假性找不到」错误
+- 错误码更精确，便于上游 CLI/Skill 给出"请检查剪贴板"的针对性提示
+
+---
+
 ## 2026-05-26
 
 ### 修复：sendpic 不支持本地图片路径（v2.1.2）
