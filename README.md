@@ -297,7 +297,8 @@ HTTP API 模式：
 - 微信主窗口：`Name="微信"`，`ClassName="mmui::MainWindow"`
 - 会话项：`ClassName="mmui::ChatSessionCell"`，`AutomationId="session_item_<联系人名>"`
 - 搜索框：`EditControl(Name="搜索")`
-- 聊天输入框：`EditControl(foundIndex=1)`
+- 聊天输入框：`EditControl(AutomationId="chat_input_field", ClassName="mmui::ChatInputField")`
+  - 旧版 `EditControl(foundIndex=1)` 在新版微信打开公众号文章/视频后会错位（右侧内置浏览器有自己的输入框），已弃用。
 
 ## 常见问题
 

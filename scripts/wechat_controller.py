@@ -288,6 +288,43 @@ class WeChatController:
         """搜索联系人，保留布尔返回给旧调用方使用。"""
         return self.search_contact_result(contact_name).success
     
+    def _find_chat_input(self, wx):
+        """
+        定位聊天输入框（新版微信兼容）。
+
+        旧版用 wx.EditControl(foundIndex=1) 依赖深度优先第二个 EditControl，
+        但新版微信打开公众号文章/视频后右侧会出现独立内置浏览器面板，
+        浏览器里的输入框会让 foundIndex 错位，从而点不到真正的聊天输入框。
+
+        正确做法是用稳定的 AutomationId + ClassName 精确匹配：
+            AutomationId = "chat_input_field"
+            ClassName    = "mmui::ChatInputField"
+        Name 字段是当前会话名称（联系人/群名），会动态变化，因此不参与匹配。
+        """
+        try:
+            chat_edit = wx.EditControl(
+                AutomationId="chat_input_field",
+                ClassName="mmui::ChatInputField",
+                searchDepth=20,
+            )
+            if chat_edit.Exists(0, 0):
+                return chat_edit
+
+            chat_edit = wx.EditControl(ClassName="mmui::ChatInputField", searchDepth=20)
+            if chat_edit.Exists(0, 0):
+                logger.warning("仅以 ClassName 匹配到聊天输入框，AutomationId 可能已变化")
+                return chat_edit
+
+            chat_edit = wx.EditControl(AutomationId="chat_input_field", searchDepth=20)
+            if chat_edit.Exists(0, 0):
+                logger.warning("仅以 AutomationId 匹配到聊天输入框，ClassName 可能已变化")
+                return chat_edit
+
+            return None
+        except Exception as e:
+            logger.error(f"查找聊天输入框异常: {str(e)}")
+            return None
+
     def _set_clipboard_text(self, text, max_retries=3):
         """
         安全地设置剪贴板文本（使用 pyperclip，正确支持 Unicode/中文）
@@ -336,9 +373,10 @@ class WeChatController:
             wx.SetActive()
             time.sleep(0.2)
             
-            # 查找聊天输入框（foundIndex=1 表示第二个 EditControl）
-            chat_edit = wx.EditControl(foundIndex=1)
-            if not chat_edit.Exists(0, 0):
+            # 通过 AutomationId="chat_input_field" 精确定位聊天输入框
+            # 旧版 foundIndex=1 在打开公众号文章/视频面板后会错位
+            chat_edit = self._find_chat_input(wx)
+            if chat_edit is None:
                 message = "未找到聊天输入框，可能未成功进入目标会话或微信 UI 结构已变化。"
                 logger.error(message)
                 return self._fail("CHAT_INPUT_NOT_FOUND", message)
@@ -601,9 +639,9 @@ class WeChatController:
             wx.SetActive()
             time.sleep(0.2)
             
-            # 查找聊天输入框
-            chat_edit = wx.EditControl(foundIndex=1)
-            if not chat_edit.Exists(0, 0):
+            # 通过 AutomationId="chat_input_field" 精确定位聊天输入框
+            chat_edit = self._find_chat_input(wx)
+            if chat_edit is None:
                 message = "未找到聊天输入框，可能未成功进入目标会话或微信 UI 结构已变化。"
                 logger.error(message)
                 return self._fail("CHAT_INPUT_NOT_FOUND", message)
@@ -648,8 +686,9 @@ class WeChatController:
             wx.SetActive()
             time.sleep(0.2)
 
-            chat_edit = wx.EditControl(foundIndex=1)
-            if not chat_edit.Exists(0, 0):
+            # 通过 AutomationId="chat_input_field" 精确定位聊天输入框
+            chat_edit = self._find_chat_input(wx)
+            if chat_edit is None:
                 message = "未找到聊天输入框，可能未成功进入目标会话或微信 UI 结构已变化。"
                 logger.error(message)
                 return self._fail("CHAT_INPUT_NOT_FOUND", message)
